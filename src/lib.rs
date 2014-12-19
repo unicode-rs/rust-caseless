@@ -1,12 +1,10 @@
-#![feature(tuple_indexing, if_let)]
-
 extern crate core;
 
 use core::slice::BinarySearchResult;
 use std::num::Int;
 use std::char;
 
-include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"))
+include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
 
 pub fn default_case_fold_char(c: char) -> CaseFoldingResult {
     match CASE_FOLDING_TABLE.binary_search(|&(x, _)| x.cmp(&c)) {
@@ -16,6 +14,7 @@ pub fn default_case_fold_char(c: char) -> CaseFoldingResult {
     }
 }
 
+#[deriving(Copy)]
 pub enum CaseFoldingResult {
     /// A `char` case folds to itself
     Unchanged,
@@ -232,8 +231,8 @@ fn canonical_sort(comb: &mut [(char, u8)]) {
     for i in range(0, len) {
         let mut swapped = false;
         for j in range(1, len-i) {
-            let class_a = *comb[j-1].ref1();
-            let class_b = *comb[j].ref1();
+            let class_a = comb[j-1].1;
+            let class_b = comb[j].1;
             if class_a != 0 && class_b != 0 && class_a > class_b {
                 comb.swap(j-1, j);
                 swapped = true;

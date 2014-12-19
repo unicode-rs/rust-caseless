@@ -1,4 +1,4 @@
-#![feature(macro_rules, if_let)]
+#![feature(macro_rules)]
 
 extern crate regex;
 
@@ -19,27 +19,27 @@ fn main() {
 
     macro_rules! w {
         ($($args: tt)+) => { (write!(f, $($args)+)).unwrap(); }
-    }
+    };
 
-    w!("pub const UNICODE_VERSION: &'static str = \"{}\";\n", unicode_version)
-    w!("const CASE_FOLDING_TABLE: &'static [(char, &'static [char])] = &[\n")
+    w!("pub const UNICODE_VERSION: &'static str = \"{}\";\n", unicode_version);
+    w!("const CASE_FOLDING_TABLE: &'static [(char, &'static [char])] = &[\n");
 
     // Entry with C (common case folding) or F (full case folding) status
     let c_or_f_entry = Regex::new(r"^([0-9A-F]+); [CF]; ([0-9A-F ]+);").unwrap();
 
     for line in lines {
         if let Some(captures) = c_or_f_entry.captures(line) {
-            let from = captures.at(1);
-            let mut to = captures.at(2).split(' ');
+            let from = captures.at(1).unwrap();
+            let mut to = captures.at(2).unwrap().split(' ');
             let first_to = to.next().unwrap();
-            w!("  ('{}', &['{}'", hex_to_escaped(from), hex_to_escaped(first_to))
+            w!("  ('{}', &['{}'", hex_to_escaped(from), hex_to_escaped(first_to));
             for c in to {
-                w!(", '{}'", hex_to_escaped(c))
+                w!(", '{}'", hex_to_escaped(c));
             }
-            w!("]),\n")
+            w!("]),\n");
         }
     }
-    w!("];\n")
+    w!("];\n");
 }
 
 
