@@ -178,23 +178,29 @@ impl<I> Iterator<char> for Decompositions<I> where I: Iterator<char> {
             _ => self.sorted = false
         }
 
-        let decomposer = match self.kind {
-            DecompositionType::Canonical => char::decompose_canonical,
-            DecompositionType::Compatible => char::decompose_compatible
-        };
-
         if !self.sorted {
             for ch in self.iter {
                 let buffer = &mut self.buffer;
                 let sorted = &mut self.sorted;
-                decomposer(ch, |d| {
-                    let class = char::canonical_combining_class(d);
-                    if class == 0 && !*sorted {
-                        canonical_sort(buffer.as_mut_slice());
-                        *sorted = true;
+                {
+                    let callback = |d| {
+                        let class =
+                            char::canonical_combining_class(d);
+                        if class == 0 && !*sorted {
+                            canonical_sort(buffer.as_mut_slice());
+                            *sorted = true;
+                        }
+                        buffer.push((d, class));
+                    };
+                    match self.kind {
+                        DecompositionType::Canonical => {
+                            char::decompose_canonical(ch, callback)
+                        }
+                        DecompositionType::Compatible => {
+                            char::decompose_compatible(ch, callback)
+                        }
                     }
-                    buffer.push((d, class));
-                });
+                }
                 if *sorted { break }
             }
         }
