@@ -1,16 +1,14 @@
 extern crate core;
 
-use core::slice::BinarySearchResult;
 use std::num::Int;
 use std::char;
 
 include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
 
 pub fn default_case_fold_char(c: char) -> CaseFoldingResult {
-    match CASE_FOLDING_TABLE.binary_search(|&(x, _)| x.cmp(&c)) {
-        BinarySearchResult::NotFound(_) => CaseFoldingResult::Unchanged,
-        BinarySearchResult::Found(i) => CaseFoldingResult::ReplacedWith(
-            CASE_FOLDING_TABLE[i].1),
+    match CASE_FOLDING_TABLE.binary_search_by(|&(x, _)| x.cmp(&c)) {
+        Err(_) => CaseFoldingResult::Unchanged,
+        Ok(i) => CaseFoldingResult::ReplacedWith(CASE_FOLDING_TABLE[i].1),
     }
 }
 
@@ -37,7 +35,7 @@ pub fn default_case_fold<I>(chars: I) -> CaseFold<I> where I: Iterator<char> {
 
 impl<I> Iterator<char> for CaseFold<I> where I: Iterator<char> {
     fn next(&mut self) -> Option<char> {
-        if let Some(&c) = self.queue.head() {
+        if let Some(&c) = self.queue.first() {
             self.queue = self.queue.tail();
             return Some(c);
         }
@@ -165,7 +163,7 @@ struct Decompositions<I> {
 impl<I> Iterator<char> for Decompositions<I> where I: Iterator<char> {
     #[inline]
     fn next(&mut self) -> Option<char> {
-        match self.buffer.as_slice().head() {
+        match self.buffer.as_slice().first() {
             Some(&(c, 0)) => {
                 self.sorted = false;
                 self.buffer.remove(0);
@@ -210,13 +208,16 @@ impl<I> Iterator<char> for Decompositions<I> where I: Iterator<char> {
             self.sorted = true;
         }
 
-        match self.buffer.remove(0) {
-            Some((c, 0)) => {
-                self.sorted = false;
-                Some(c)
+        if self.buffer.is_empty() {
+            None
+        } else {
+            match self.buffer.remove(0) {
+                (c, 0) => {
+                    self.sorted = false;
+                    Some(c)
+                }
+                (c, _) => Some(c),
             }
-            Some((c, _)) => Some(c),
-            None => None
         }
     }
 

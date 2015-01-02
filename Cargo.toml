@@ -1,7 +1,9 @@
 [package]
 
-name = "casefold"
+name = "caseless"
 version = "0.0.1"
 authors = ["Simon Sapin <simon.sapin@exyr.org>"]
+description = "Unicode caseless matching"
+license = "MIT"
 
 build = "src/build.rs"
