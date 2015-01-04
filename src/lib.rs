@@ -12,7 +12,7 @@ pub fn default_case_fold_char(c: char) -> CaseFoldingResult {
     }
 }
 
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum CaseFoldingResult {
     /// A `char` case folds to itself
     Unchanged,
@@ -181,7 +181,7 @@ impl<I> Iterator<char> for Decompositions<I> where I: Iterator<char> {
                 let buffer = &mut self.buffer;
                 let sorted = &mut self.sorted;
                 {
-                    let callback = |d| {
+                    let callback = |&mut: d| {
                         let class =
                             char::canonical_combining_class(d);
                         if class == 0 && !*sorted {
