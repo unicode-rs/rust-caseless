@@ -1,5 +1,6 @@
-extern crate core;
+#![feature(associated_types)]
 
+use std::iter::order::eq as iter_eq;
 use std::num::Int;
 use std::char;
 
@@ -26,14 +27,16 @@ pub struct CaseFold<I> {
     queue: &'static [char],
 }
 
-pub fn default_case_fold<I>(chars: I) -> CaseFold<I> where I: Iterator<char> {
+pub fn default_case_fold<I>(chars: I) -> CaseFold<I> where I: Iterator<Item = char> {
     CaseFold {
         chars: chars,
         queue: &[],
     }
 }
 
-impl<I> Iterator<char> for CaseFold<I> where I: Iterator<char> {
+impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
+    type Item = char;
+
     fn next(&mut self) -> Option<char> {
         if let Some(&c) = self.queue.first() {
             self.queue = self.queue.tail();
@@ -61,7 +64,7 @@ pub fn default_case_fold_str(s: &str) -> String {
 
 
 pub fn default_caseless_match<I, J>(i: I, j: J) -> bool
-where I: Iterator<char>, J: Iterator<char> {
+where I: Iterator<Item = char>, J: Iterator<Item = char> {
     iter_eq(default_case_fold(i),
             default_case_fold(j))
 }
@@ -71,7 +74,7 @@ pub fn default_caseless_match_str(a: &str, b: &str) -> bool {
 }
 
 pub fn canonical_caseless_match<I, J>(i: I, j: J) -> bool
-where I: Iterator<char>, J: Iterator<char> {
+where I: Iterator<Item = char>, J: Iterator<Item = char> {
     // FIXME: Inner NFD can be optimized:
     // "Normalization is not required before case folding,
     //  except for the character U+0345 "combining greek ypogegrammeni"
@@ -90,7 +93,7 @@ pub fn canonical_caseless_match_str(a: &str, b: &str) -> bool {
 }
 
 pub fn compatibility_caseless_match<I, J>(i: I, j: J) -> bool
-where I: Iterator<char>, J: Iterator<char> {
+where I: Iterator<Item = char>, J: Iterator<Item = char> {
     // FIXME: Unclear if the inner NFD can be optimized here like in canonical_caseless_match.
     iter_eq(nfkd(default_case_fold(nfkd(default_case_fold(nfd(i))))),
             nfkd(default_case_fold(nfkd(default_case_fold(nfd(j))))))
@@ -100,33 +103,7 @@ pub fn compatibility_caseless_match_str(a: &str, b: &str) -> bool {
     compatibility_caseless_match(a.chars(), b.chars())
 }
 
-
-/// Like `i.collect::Vec<_>() == j.collect::Vec<_>()`, but does not allocate.
-pub fn iter_eq<I, J, E>(i: I, j: J) -> bool where I: Iterator<E>, J: Iterator<E>, E: Eq {
-    zip_all(i, j, |a, b| a == b)
-}
-
-
-/// Like `i.zip(j).all(f)`,
-/// but also return `false` in the iterators don’t have the same length.
-/// FIXME: Add `zip_any`?
-pub fn zip_all<I, J, A, B>(mut i: I, mut j: J, f: |A, B| -> bool) -> bool
-where I: Iterator<A>, J: Iterator<B> {
-    loop {
-        match (i.next(), j.next()) {
-            (None, None) => return true,
-            (Some(a), Some(b)) => {
-                if !f(a, b) {
-                    return false
-                }
-            }
-            _ => return false,
-        }
-    }
-}
-
-
-fn nfd<I>(chars: I) -> Decompositions<I> where I: Iterator<char> {
+fn nfd<I>(chars: I) -> Decompositions<I> where I: Iterator<Item = char> {
     Decompositions {
         iter: chars,
         buffer: Vec::new(),
@@ -135,7 +112,7 @@ fn nfd<I>(chars: I) -> Decompositions<I> where I: Iterator<char> {
     }
 }
 
-fn nfkd<I>(chars: I) -> Decompositions<I> where I: Iterator<char> {
+fn nfkd<I>(chars: I) -> Decompositions<I> where I: Iterator<Item = char> {
     Decompositions {
         iter: chars,
         buffer: Vec::new(),
@@ -146,7 +123,7 @@ fn nfkd<I>(chars: I) -> Decompositions<I> where I: Iterator<char> {
 
 
 // The rest of the file is taken from libcollections,
-// but with Decompositions::iter changed to be any Iterator<char>
+// but with Decompositions::iter changed to be any Iterator<Item = char>
 // instead of Chars<'a>
 // FIXME: expose a generic API, in the spirit of PR #19042 ?
 // Caseless matching demonstrates a use case for
@@ -160,7 +137,9 @@ struct Decompositions<I> {
     sorted: bool
 }
 
-impl<I> Iterator<char> for Decompositions<I> where I: Iterator<char> {
+impl<I> Iterator for Decompositions<I> where I: Iterator<Item = char> {
+    type Item = char;
+
     #[inline]
     fn next(&mut self) -> Option<char> {
         match self.buffer.as_slice().first() {
