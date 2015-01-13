@@ -1,5 +1,3 @@
-#![feature(associated_types)]
-
 use std::iter::order::eq as iter_eq;
 use std::num::Int;
 use std::char;
@@ -51,7 +49,7 @@ impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
         })
     }
 
-    fn size_hint(&self) -> (uint, Option<uint>) {
+    fn size_hint(&self) -> (usize, Option<usize>) {
         let (low, high) = self.chars.size_hint();
         (low, high.and_then(|h| h.checked_mul(3)))
     }
@@ -142,7 +140,7 @@ impl<I> Iterator for Decompositions<I> where I: Iterator<Item = char> {
 
     #[inline]
     fn next(&mut self) -> Option<char> {
-        match self.buffer.as_slice().first() {
+        match self.buffer.first() {
             Some(&(c, 0)) => {
                 self.sorted = false;
                 self.buffer.remove(0);
@@ -200,7 +198,7 @@ impl<I> Iterator for Decompositions<I> where I: Iterator<Item = char> {
         }
     }
 
-    fn size_hint(&self) -> (uint, Option<uint>) {
+    fn size_hint(&self) -> (usize, Option<usize>) {
         let (lower, _) = self.iter.size_hint();
         (lower, None)
     }
@@ -214,9 +212,9 @@ enum DecompositionType {
 // Helper functions used for Unicode normalization
 fn canonical_sort(comb: &mut [(char, u8)]) {
     let len = comb.len();
-    for i in range(0, len) {
+    for i in (0..len) {
         let mut swapped = false;
-        for j in range(1, len-i) {
+        for j in (1..len-i) {
             let class_a = comb[j-1].1;
             let class_b = comb[j].1;
             if class_a != 0 && class_b != 0 && class_a > class_b {

@@ -12,7 +12,7 @@ fn main() {
     let mut lines = include_str!("../CaseFolding.txt").lines();
     let first_line = lines.next().unwrap();
     let version_regex = Regex::new(r"^# CaseFolding-(\d.\d.\d).txt$").unwrap();
-    let unicode_version = version_regex.captures(first_line).unwrap().at(1);
+    let unicode_version = version_regex.captures(first_line).unwrap().at(1).unwrap();
 
     let dst = Path::new(os::getenv("OUT_DIR").unwrap());
     let mut f = &mut File::create(&dst.join("case_folding_data.rs")).unwrap();
