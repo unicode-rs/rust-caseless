@@ -1,5 +1,3 @@
-#![feature(macro_rules)]
-
 extern crate regex;
 
 use std::os;

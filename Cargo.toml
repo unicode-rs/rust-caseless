@@ -7,3 +7,6 @@ description = "Unicode caseless matching"
 license = "MIT"
 
 build = "src/build.rs"
+
+[build-dependencies]
+regex = "0.1"
