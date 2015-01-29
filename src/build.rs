@@ -1,7 +1,9 @@
+#![feature(os, path, io, core)]
+
 extern crate regex;
 
 use std::os;
-use std::io::File;
+use std::old_io::File;
 use std::num;
 use std::char;
 use regex::Regex;

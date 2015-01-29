@@ -1,3 +1,5 @@
+#![feature(collections, core, unicode)]
+
 use std::iter::order::eq as iter_eq;
 use std::num::Int;
 use std::char;
