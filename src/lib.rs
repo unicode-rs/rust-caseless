@@ -156,11 +156,11 @@ impl<I> Iterator for Decompositions<I> where I: Iterator<Item = char> {
         }
 
         if !self.sorted {
-            for ch in self.iter {
+            for ch in self.iter.by_ref() {
                 let buffer = &mut self.buffer;
                 let sorted = &mut self.sorted;
                 {
-                    let callback = |&mut: d| {
+                    let callback = |d| {
                         let class =
                             char::canonical_combining_class(d);
                         if class == 0 && !*sorted {
