@@ -1,9 +1,11 @@
-#![feature(env, path, io, core)]
+#![feature(path, io, core)]
 
 extern crate regex;
 
 use std::env;
-use std::old_io::File;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 use std::num;
 use std::char;
 use regex::Regex;
@@ -14,8 +16,8 @@ fn main() {
     let version_regex = Regex::new(r"^# CaseFolding-(\d.\d.\d).txt$").unwrap();
     let unicode_version = version_regex.captures(first_line).unwrap().at(1).unwrap();
 
-    let dst = Path::new(env::var("OUT_DIR").unwrap());
-    let mut f = &mut File::create(&dst.join("case_folding_data.rs")).unwrap();
+    let dst = Path::new(&env::var("OUT_DIR").unwrap()).join("case_folding_data.rs");
+    let mut f = &mut File::create(&dst).unwrap();
 
     macro_rules! w {
         ($($args: tt)+) => { (write!(f, $($args)+)).unwrap(); }
