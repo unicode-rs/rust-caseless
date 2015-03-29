@@ -164,7 +164,7 @@ impl<I> Iterator for Decompositions<I> where I: Iterator<Item = char> {
                         let class =
                             char::canonical_combining_class(d);
                         if class == 0 && !*sorted {
-                            canonical_sort(buffer.as_mut_slice());
+                            canonical_sort(buffer);
                             *sorted = true;
                         }
                         buffer.push((d, class));
@@ -183,7 +183,7 @@ impl<I> Iterator for Decompositions<I> where I: Iterator<Item = char> {
         }
 
         if !self.sorted {
-            canonical_sort(self.buffer.as_mut_slice());
+            canonical_sort(&mut self.buffer);
             self.sorted = true;
         }
 

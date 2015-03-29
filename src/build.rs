@@ -1,4 +1,4 @@
-#![feature(path, io, core)]
+#![feature(core)]
 
 extern crate regex;
 
