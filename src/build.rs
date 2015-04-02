@@ -1,12 +1,9 @@
-#![feature(core)]
-
 extern crate regex;
 
 use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::num;
 use std::char;
 use regex::Regex;
 
@@ -46,5 +43,5 @@ fn main() {
 
 
 fn hex_to_escaped(hex: &str) -> String {
-    char::from_u32(num::from_str_radix(hex, 16).unwrap()).unwrap().escape_default().collect()
+    char::from_u32(u32::from_str_radix(hex, 16).unwrap()).unwrap().escape_default().collect()
 }

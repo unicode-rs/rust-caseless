@@ -1,7 +1,6 @@
-#![feature(collections, core, unicode)]
+#![feature(core, unicode)]
 
 use std::iter::order::eq as iter_eq;
-use std::num::Int;
 use std::char;
 
 include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
@@ -39,13 +38,13 @@ impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
 
     fn next(&mut self) -> Option<char> {
         if let Some(&c) = self.queue.first() {
-            self.queue = self.queue.tail();
+            self.queue = &self.queue[1..];
             return Some(c);
         }
         self.chars.next().map(|c| match default_case_fold_char(c) {
             CaseFoldingResult::Unchanged => c,
             CaseFoldingResult::ReplacedWith(replacement) => {
-                self.queue = replacement.tail();
+                self.queue = &replacement[1..];
                 replacement[0]
             }
         })
