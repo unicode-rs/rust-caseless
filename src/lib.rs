@@ -12,7 +12,7 @@ pub fn default_case_fold_char(c: char) -> CaseFoldingResult {
     }
 }
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum CaseFoldingResult {
     /// A `char` case folds to itself
     Unchanged,
