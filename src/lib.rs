@@ -1,6 +1,5 @@
-#![feature(core, unicode)]
+#![feature(unicode)]
 
-use std::iter::order::eq as iter_eq;
 use std::char;
 
 include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
@@ -224,5 +223,15 @@ fn canonical_sort(comb: &mut [(char, u8)]) {
             }
         }
         if !swapped { break; }
+    }
+}
+
+fn iter_eq<L: Iterator, R: Iterator>(mut a: L, mut b: R) -> bool where L::Item: PartialEq<R::Item> {
+    loop {
+        match (a.next(), b.next()) {
+            (None, None) => return true,
+            (None, _) | (_, None) => return false,
+            (Some(x), Some(y)) => if !x.eq(&y) { return false },
+        }
     }
 }
