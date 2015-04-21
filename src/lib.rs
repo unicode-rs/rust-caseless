@@ -4,49 +4,6 @@ extern crate unicode_normalization;
 
 include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
 
-pub fn default_case_fold_char(c: char) -> CaseFoldingResult {
-    match CASE_FOLDING_TABLE.binary_search_by(|&(x, _)| x.cmp(&c)) {
-        Err(_) => CaseFoldingResult::Unchanged,
-        Ok(i) => CaseFoldingResult::ReplacedWith(CASE_FOLDING_TABLE[i].1),
-    }
-}
-
-#[derive(Copy, Clone)]
-pub enum CaseFoldingResult {
-    /// A `char` case folds to itself
-    Unchanged,
-    /// A `char` case folds to a sequence of one (most common),
-    /// two, or three `char`s.
-    ReplacedWith(&'static [char]),
-}
-
-pub struct CaseFold<I> {
-    chars: I,
-    queue: &'static [char],
-}
-
-impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
-    type Item = char;
-
-    fn next(&mut self) -> Option<char> {
-        if let Some(&c) = self.queue.first() {
-            self.queue = &self.queue[1..];
-            return Some(c);
-        }
-        self.chars.next().map(|c| match default_case_fold_char(c) {
-            CaseFoldingResult::Unchanged => c,
-            CaseFoldingResult::ReplacedWith(replacement) => {
-                self.queue = &replacement[1..];
-                replacement[0]
-            }
-        })
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let (low, high) = self.chars.size_hint();
-        (low, high.and_then(|h| h.checked_mul(3)))
-    }
-}
 
 pub trait Caseless {
     fn default_case_fold(self) -> CaseFold<Self>;
@@ -59,7 +16,7 @@ impl<I: Iterator<Item=char>> Caseless for I {
     fn default_case_fold(self) -> CaseFold<I> {
         CaseFold {
             chars: self,
-            queue: &[],
+            queue: ['\0', '\0'],
         }
     }
 
@@ -113,5 +70,45 @@ fn iter_eq<L: Iterator, R: Iterator>(mut a: L, mut b: R) -> bool where L::Item: 
             (None, _) | (_, None) => return false,
             (Some(x), Some(y)) => if !x.eq(&y) { return false },
         }
+    }
+}
+
+pub struct CaseFold<I> {
+    chars: I,
+    queue: [char; 2],
+}
+
+impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<char> {
+        let c = self.queue[0];
+        if c != '\0' {
+            self.queue[0] = self.queue[1];
+            return Some(c)
+        }
+        self.chars.next().map(|c| {
+            match CASE_FOLDING_TABLE.binary_search_by(|&(x, _)| x.cmp(&c)) {
+                Err(_) => c,
+                Ok(i) => {
+                    let folded = CASE_FOLDING_TABLE[i].1;
+                    self.queue = [folded[1], folded[2]];
+                    folded[0]
+                }
+            }
+        })
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let queue_len = if self.queue[0] == '\0' {
+            0
+        } else if self.queue[1] == '\0' {
+            1
+        } else {
+            2
+        };
+        let (low, high) = self.chars.size_hint();
+        (low.saturating_add(queue_len),
+         high.and_then(|h| h.checked_mul(3)).and_then(|h| h.checked_add(queue_len)))
     }
 }

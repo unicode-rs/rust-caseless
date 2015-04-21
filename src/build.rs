@@ -1,11 +1,14 @@
 extern crate regex;
 
+use std::char;
 use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use std::char;
 use regex::Regex;
+
+// Case folding a single code point can give up to this many code points.
+const MAX_FOLDED_CODE_POINTS: usize = 3;
 
 fn main() {
     let mut lines = include_str!("../CaseFolding.txt").lines();
@@ -21,7 +24,7 @@ fn main() {
     };
 
     w!("pub const UNICODE_VERSION: &'static str = \"{}\";\n", unicode_version);
-    w!("const CASE_FOLDING_TABLE: &'static [(char, &'static [char])] = &[\n");
+    w!("const CASE_FOLDING_TABLE: &'static [(char, [char; 3])] = &[\n");
 
     // Entry with C (common case folding) or F (full case folding) status
     let c_or_f_entry = Regex::new(r"^([0-9A-F]+); [CF]; ([0-9A-F ]+);").unwrap();
@@ -29,11 +32,17 @@ fn main() {
     for line in lines {
         if let Some(captures) = c_or_f_entry.captures(line) {
             let from = captures.at(1).unwrap();
-            let mut to = captures.at(2).unwrap().split(' ');
+            let to = captures.at(2).unwrap().split(' ').map(hex_to_escaped).collect::<Vec<_>>();
+            assert!(to.len() <= MAX_FOLDED_CODE_POINTS);
+            let blanks = MAX_FOLDED_CODE_POINTS - to.len();
+            let mut to = to.into_iter();
             let first_to = to.next().unwrap();
-            w!("  ('{}', &['{}'", hex_to_escaped(from), hex_to_escaped(first_to));
+            w!("  ('{}', ['{}'", hex_to_escaped(from), first_to);
             for c in to {
-                w!(", '{}'", hex_to_escaped(c));
+                w!(", '{}'", c);
+            }
+            for _ in 0..blanks {
+                w!(", '\\0'");
             }
             w!("]),\n");
         }
@@ -43,5 +52,7 @@ fn main() {
 
 
 fn hex_to_escaped(hex: &str) -> String {
-    char::from_u32(u32::from_str_radix(hex, 16).unwrap()).unwrap().escape_default().collect()
+    let c = u32::from_str_radix(hex, 16).unwrap();
+    assert!(c != 0);
+    char::from_u32(c).unwrap().escape_default().collect()
 }
