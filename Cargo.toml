@@ -10,3 +10,6 @@ build = "src/build.rs"
 
 [build-dependencies]
 regex = "0.1"
+
+[dependencies]
+unicode-normalization = "0.1"
