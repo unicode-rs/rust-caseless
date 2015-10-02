@@ -6,7 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
 
 
 pub trait Caseless {
-    fn default_case_fold(self) -> CaseFold<Self>;
+    fn default_case_fold(self) -> CaseFold<Self> where Self: Sized;
     fn default_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
     fn canonical_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
     fn compatibility_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
