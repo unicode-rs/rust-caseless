@@ -14,7 +14,7 @@ fn main() {
     let mut lines = include_str!("../CaseFolding.txt").lines();
     let first_line = lines.next().unwrap();
     let version_regex = Regex::new(r"^# CaseFolding-(\d.\d.\d).txt$").unwrap();
-    let unicode_version = version_regex.captures(first_line).unwrap().at(1).unwrap();
+    let unicode_version = &version_regex.captures(first_line).unwrap()[1];
 
     let dst = Path::new(&env::var("OUT_DIR").unwrap()).join("case_folding_data.rs");
     let mut f = &mut File::create(&dst).unwrap();
@@ -31,8 +31,8 @@ fn main() {
 
     for line in lines {
         if let Some(captures) = c_or_f_entry.captures(line) {
-            let from = captures.at(1).unwrap();
-            let to = captures.at(2).unwrap().split(' ').map(hex_to_escaped).collect::<Vec<_>>();
+            let from = &captures[1];
+            let to = captures[2].split(' ').map(hex_to_escaped).collect::<Vec<_>>();
             assert!(to.len() <= MAX_FOLDED_CODE_POINTS);
             let blanks = MAX_FOLDED_CODE_POINTS - to.len();
             let mut to = to.into_iter();
