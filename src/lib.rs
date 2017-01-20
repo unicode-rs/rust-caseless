@@ -85,6 +85,7 @@ impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
         let c = self.queue[0];
         if c != '\0' {
             self.queue[0] = self.queue[1];
+            self.queue[1] = '\0';
             return Some(c)
         }
         self.chars.next().map(|c| {
