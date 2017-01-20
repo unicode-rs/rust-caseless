@@ -113,3 +113,17 @@ impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
          high.and_then(|h| h.checked_mul(3)).and_then(|h| h.checked_add(queue_len)))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::default_case_fold_str;
+
+    #[test]
+    fn test_strs() {
+        assert_eq!(default_case_fold_str("Test Case"), "test case");
+        assert_eq!(default_case_fold_str("Teſt Caſe"), "test case");
+        assert_eq!(default_case_fold_str("spiﬃest"), "spiffiest");
+        assert_eq!(default_case_fold_str("straße"), "strasse");
+    }
+}
+
