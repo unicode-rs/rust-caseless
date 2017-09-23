@@ -13,7 +13,7 @@ const MAX_FOLDED_CODE_POINTS: usize = 3;
 fn main() {
     let mut lines = include_str!("../CaseFolding.txt").lines();
     let first_line = lines.next().unwrap();
-    let version_regex = Regex::new(r"^# CaseFolding-(\d.\d.\d).txt$").unwrap();
+    let version_regex = Regex::new(r"^# CaseFolding-(\d+.\d+.\d+).txt$").unwrap();
     let unicode_version = &version_regex.captures(first_line).unwrap()[1];
 
     let dst = Path::new(&env::var("OUT_DIR").unwrap()).join("case_folding_data.rs");
