@@ -1,7 +1,6 @@
 [package]
-
 name = "caseless"
-version = "0.1.3"
+version = "0.2.0"
 authors = ["Simon Sapin <simon.sapin@exyr.org>"]
 description = "Unicode caseless matching"
 repository = "https://github.com/SimonSapin/rust-caseless"
