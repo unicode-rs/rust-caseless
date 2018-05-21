@@ -1,6 +1,6 @@
 [package]
 name = "caseless"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Simon Sapin <simon.sapin@exyr.org>"]
 description = "Unicode caseless matching"
 repository = "https://github.com/SimonSapin/rust-caseless"
@@ -9,7 +9,7 @@ license = "MIT"
 build = "src/build.rs"
 
 [build-dependencies]
-regex = "0.2"
+regex = "1.0"
 
 [dependencies]
 unicode-normalization = "0.1"
