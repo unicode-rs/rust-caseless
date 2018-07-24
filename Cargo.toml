@@ -12,4 +12,9 @@ build = "src/build.rs"
 regex = "1.0"
 
 [dependencies]
-unicode-normalization = "0.1"
+unicode-normalization = { version = "0.1", optional = true }
+
+[features]
+default = ["alloc", "normalization"]
+alloc = []
+normalization = ["unicode-normalization"]

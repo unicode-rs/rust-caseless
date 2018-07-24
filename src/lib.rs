@@ -1,15 +1,29 @@
+#![cfg_attr(not(feature = "alloc"), no_std)]
+
+#[cfg(feature = "normalization")]
 use unicode_normalization::UnicodeNormalization;
 
+#[cfg(feature = "normalization")]
 extern crate unicode_normalization;
 
 include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
 
 
+#[cfg(feature = "normalization")]
 pub trait Caseless {
     fn default_case_fold(self) -> CaseFold<Self> where Self: Sized;
     fn default_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
     fn canonical_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
     fn compatibility_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
+}
+
+#[cfg(not(feature = "normalization"))]
+// This trait is private when the `normalization` feature is disabled.  Otherwise, external crates
+// implementing the version without the `normalization` methods might get linked into projects that
+// do use the `normalization` feature, causing a trait mismatch error.
+trait Caseless {
+    fn default_case_fold(self) -> CaseFold<Self> where Self: Sized;
+    fn default_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
 }
 
 impl<I: Iterator<Item=char>> Caseless for I {
@@ -25,6 +39,7 @@ impl<I: Iterator<Item=char>> Caseless for I {
                 other.default_case_fold())
     }
 
+    #[cfg(feature = "normalization")]
     fn canonical_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool {
         // FIXME: Inner NFD can be optimized:
         // "Normalization is not required before case folding,
@@ -39,6 +54,7 @@ impl<I: Iterator<Item=char>> Caseless for I {
                 other.nfd().default_case_fold().nfd())
     }
 
+    #[cfg(feature = "normalization")]
     fn compatibility_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool {
         // FIXME: Unclear if the inner NFD can be optimized here like in canonical_caseless_match.
         iter_eq(self.nfd().default_case_fold().nfkd().default_case_fold().nfkd(),
@@ -47,6 +63,7 @@ impl<I: Iterator<Item=char>> Caseless for I {
 
 }
 
+#[cfg(feature = "alloc")]
 pub fn default_case_fold_str(s: &str) -> String {
     s.chars().default_case_fold().collect()
 }
@@ -55,10 +72,12 @@ pub fn default_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().default_caseless_match(b.chars())
 }
 
+#[cfg(feature = "normalization")]
 pub fn canonical_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().canonical_caseless_match(b.chars())
 }
 
+#[cfg(feature = "normalization")]
 pub fn compatibility_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().compatibility_caseless_match(b.chars())
 }
@@ -116,9 +135,10 @@ impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
 
 #[cfg(test)]
 mod tests {
-    use super::default_case_fold_str;
+    use super::*;
 
     #[test]
+    #[cfg(feature = "alloc")]
     fn test_strs() {
         assert_eq!(default_case_fold_str("Test Case"), "test case");
         assert_eq!(default_case_fold_str("Teſt Caſe"), "test case");
