@@ -1,10 +1,13 @@
 [package]
 name = "caseless"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Simon Sapin <simon.sapin@exyr.org>"]
 description = "Unicode caseless matching"
 repository = "https://github.com/SimonSapin/rust-caseless"
 license = "MIT"
+keywords = ["unicode", "string", "case-insensitive", "normalization", "no_std"]
+categories = ["text-processing"]
+readme = "README.md"
 
 build = "src/build.rs"
 
