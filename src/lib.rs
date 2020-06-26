@@ -1,3 +1,10 @@
+//! `rust-caseless` provides functions to allow case-insensitive comparison of strings.
+//!
+//! The case folding and caseless-matching implementations follow [Section 3.13 - Default Case Algorithms](http://www.unicode.org/versions/Unicode13.0.0/ch03.pdf).
+//!
+//! See:
+//! - [W3C - Case Folding: An Introduction](https://www.w3.org/International/wiki/Case_folding)
+//! - [Unicode Standard, Version 13.0.0](http://www.unicode.org/versions/Unicode13.0.0/)
 use unicode_normalization::UnicodeNormalization;
 
 extern crate unicode_normalization;
@@ -47,18 +54,93 @@ impl<I: Iterator<Item=char>> Caseless for I {
 
 }
 
+/// Returns the case folded form of given string to allow caseless matching
+///
+/// Default Case Folding **does not preserve normalization forms**. A string in a particular Unicode
+/// normalization form may not be in that normalization form after it has been case folded.
+///
+/// Default Case Folding is based on the full case conversion operations without the context-
+/// dependent mappings sensitive to the casing context. There are also some adaptations specifically
+/// to support caseless matching. Lowercase_Mapping(C) is used for most characters,
+/// but there are instances in which the folding must be based on Uppercase_Mapping(C),
+/// instead. In particular, the addition of lowercase Cherokee letters as of Version 8.0 of the
+/// Unicode Standard, together with the stability guarantees for case folding, require that
+/// Cherokee letters be case folded to their uppercase counterparts. As a result, a case folded
+/// string is not necessarily lowercase.
+///
+/// # Examples:
+///
+/// ```
+/// use caseless::default_case_fold_str;
+///
+/// assert_eq!(default_case_fold_str("Test Case"), "test case");
+/// assert_eq!(default_case_fold_str("Teſt Caſe"), "test case");
+/// assert_eq!(default_case_fold_str("spiﬃest"), "spiffiest");
+/// assert_eq!(default_case_fold_str("straße"), "strasse");
+/// assert_eq!(default_case_fold_str("ꭴꮎꮅꭲᏼ"), "ᎤᎾᎵᎢᏴ");
+/// ```
 pub fn default_case_fold_str(s: &str) -> String {
     s.chars().default_case_fold().collect()
 }
 
+/// Compares given strings for case-insensitive equality using default case folding rules
+///
+/// Default caseless matching **does not preserve normalization forms**.
+/// See: [`caseless::canonical_caseless_match_str`] or [`caseless:compatibility_caseless_match_str`]
+///
+/// # Examples:
+///
+/// ```
+/// use caseless::default_caseless_match_str;
+///
+/// assert!(default_caseless_match_str("Test Case", "test case"));
+/// assert!(default_caseless_match_str("Teſt Caſe", "test case"));
+/// assert!(default_caseless_match_str("spiﬃest", "spiffiest"));
+/// assert!(default_caseless_match_str("straße", "strasse"));
+/// assert!(default_caseless_match_str("ꭴꮎꮅꭲᏼ", "ᎤᎾᎵᎢᏴ"));
+///
+/// // Without normalization, these do not match even though they are canonically equivalent
+/// // 'Å' from single code point and multiple code points
+/// assert!(!default_caseless_match_str("\u{00c5}", "\u{0041}\u{030A}"));
+/// ```
 pub fn default_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().default_caseless_match(b.chars())
 }
 
+/// Compares given strings for case-insensitive equality *after* NFD normalization of given strings
+///
+/// NFD normalization is performed *before* and *after* case folding
+///
+/// # Examples:
+///
+/// ```
+/// use caseless::canonical_caseless_match_str;
+///
+/// // 'Å' from single code point and multiple code points
+/// assert!(canonical_caseless_match_str("\u{00c5}", "\u{0041}\u{030A}"));
+///
+/// // NFD normalization *does not* decompose by compatibility therefore:
+/// assert!(!canonical_caseless_match_str("㎒", "MHz"))
+/// ```
 pub fn canonical_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().canonical_caseless_match(b.chars())
 }
 
+/// Compares given strings for case-insensitive equality *after* NFD and NFKD normalization of given strings
+///
+/// Compatibility caseless matching requires an extra cycle of case folding and normalization
+/// for each string compared, because the NFKD normalization of a compatibility character
+/// such as ㎒ may result in a sequence of alphabetic characters which must
+/// again be case folded (and normalized) to be compared correctly.
+///
+/// # Examples:
+///
+/// ```
+/// use caseless::compatibility_caseless_match_str;
+///
+/// assert!(compatibility_caseless_match_str("㎒", "MHz"));
+/// assert!(compatibility_caseless_match_str("ＫＡＤＯＫＡＷＡ", "KADOKAWA"))
+/// ```
 pub fn compatibility_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().compatibility_caseless_match(b.chars())
 }
@@ -116,14 +198,67 @@ impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
 
 #[cfg(test)]
 mod tests {
-    use super::default_case_fold_str;
+    use super::{default_case_fold_str, default_caseless_match_str, canonical_caseless_match_str, compatibility_caseless_match_str};
+
+    // 'Å' from single code point and multiple code points
+    const A_RING_ABOVE: (&str, &str) = ("\u{00c5}", "\u{0041}\u{030A}");
+
+    // 'ῃ' from single code point and multiple code points
+    const ETA_WITH_YPOGEGRAMMENI: (&str, &str) = ("\u{1FC3}", "\u{03B7}\u{0345}");
+
+    // NFKD normalization for '㎒' produces 'MHz'
+    const MHZ: (&str, &str) = ("㎒", "MHz");
+
+    // NFKD normalization for 'ＫＡＤＯＫＡＷＡ' produces 'KADOKAWA'
+    const KADOKAWA: (&str, &str) = ("ＫＡＤＯＫＡＷＡ", "KADOKAWA");
 
     #[test]
-    fn test_strs() {
+    fn test_default_case_fold_str() {
         assert_eq!(default_case_fold_str("Test Case"), "test case");
         assert_eq!(default_case_fold_str("Teſt Caſe"), "test case");
         assert_eq!(default_case_fold_str("spiﬃest"), "spiffiest");
         assert_eq!(default_case_fold_str("straße"), "strasse");
+        assert_eq!(default_case_fold_str("ꭴꮎꮅꭲᏼ"), "ᎤᎾᎵᎢᏴ");
+    }
+
+    #[test]
+    fn test_default_caseless_match_str() {
+        assert!(default_caseless_match_str("Test Case", "test case"));
+        assert!(default_caseless_match_str("Teſt Caſe", "test case"));
+        assert!(default_caseless_match_str("spiﬃest", "spiffiest"));
+        assert!(default_caseless_match_str("straße", "strasse"));
+        assert!(default_caseless_match_str("ꭴꮎꮅꭲᏼ", "ᎤᎾᎵᎢᏴ"));
+
+        // Without normalization, these do not match even though they are canonically equivalent
+        assert!(!default_caseless_match_str(A_RING_ABOVE.0, A_RING_ABOVE.1));
+    }
+
+    #[test]
+    fn test_canonical_caseless_match_str() {
+        assert!(canonical_caseless_match_str("Test Case", "test case"));
+        assert!(canonical_caseless_match_str("Teſt Caſe", "test case"));
+        assert!(canonical_caseless_match_str("spiﬃest", "spiffiest"));
+        assert!(canonical_caseless_match_str("straße", "strasse"));
+        assert!(canonical_caseless_match_str("ꭴꮎꮅꭲᏼ", "ᎤᎾᎵᎢᏴ"));
+        assert!(canonical_caseless_match_str(A_RING_ABOVE.0, A_RING_ABOVE.1));
+        assert!(canonical_caseless_match_str(ETA_WITH_YPOGEGRAMMENI.0, ETA_WITH_YPOGEGRAMMENI.1));
+
+        // These will match after NFKD normalized, but not NFD
+        assert!(!canonical_caseless_match_str(MHZ.0, MHZ.1));
+        assert!(!canonical_caseless_match_str(KADOKAWA.0, KADOKAWA.1))
+    }
+
+    #[test]
+    fn test_compatibility_caseless_match_str() {
+        assert!(compatibility_caseless_match_str("Test Case", "test case"));
+        assert!(compatibility_caseless_match_str("Teſt Caſe", "test case"));
+        assert!(compatibility_caseless_match_str("spiﬃest", "spiffiest"));
+        assert!(compatibility_caseless_match_str("straße", "strasse"));
+        assert!(compatibility_caseless_match_str("ꭴꮎꮅꭲᏼ", "ᎤᎾᎵᎢᏴ"));
+        assert!(compatibility_caseless_match_str(A_RING_ABOVE.0, A_RING_ABOVE.1));
+        assert!(compatibility_caseless_match_str(ETA_WITH_YPOGEGRAMMENI.0, ETA_WITH_YPOGEGRAMMENI.1));
+        assert!(compatibility_caseless_match_str(MHZ.0, MHZ.1));
+        assert!(compatibility_caseless_match_str(KADOKAWA.0, KADOKAWA.1))
     }
 }
 
