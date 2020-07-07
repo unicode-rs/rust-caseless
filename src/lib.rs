@@ -2,8 +2,9 @@ use unicode_normalization::UnicodeNormalization;
 
 extern crate unicode_normalization;
 
-include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
-
+mod case_folding_data;
+use case_folding_data::*;
+pub use case_folding_data::UNICODE_VERSION;
 
 pub trait Caseless {
     fn default_case_fold(self) -> CaseFold<Self> where Self: Sized;

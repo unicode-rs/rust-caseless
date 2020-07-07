@@ -6,10 +6,11 @@ description = "Unicode caseless matching"
 repository = "https://github.com/SimonSapin/rust-caseless"
 license = "MIT"
 
-build = "src/build.rs"
-
-[build-dependencies]
-regex = "1.0"
-
 [dependencies]
 unicode-normalization = "0.1"
+
+[workspace]
+members = [
+    ".",
+    "print-table",
+]
