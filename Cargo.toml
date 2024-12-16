@@ -8,8 +8,5 @@ license = "MIT"
 
 build = "src/build.rs"
 
-[build-dependencies]
-regex = "1.0"
-
 [dependencies]
 unicode-normalization = "0.1"
