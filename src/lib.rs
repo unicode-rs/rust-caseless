@@ -2,17 +2,20 @@ use unicode_normalization::UnicodeNormalization;
 
 extern crate unicode_normalization;
 
-include!(concat!(env!("OUT_DIR"), "/case_folding_data.rs"));
-
+mod case_folding_data;
+pub use case_folding_data::UNICODE_VERSION;
+use case_folding_data::*;
 
 pub trait Caseless {
-    fn default_case_fold(self) -> CaseFold<Self> where Self: Sized;
-    fn default_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
-    fn canonical_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
-    fn compatibility_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool;
+    fn default_case_fold(self) -> CaseFold<Self>
+    where
+        Self: Sized;
+    fn default_caseless_match<J: Iterator<Item = char>>(self, other: J) -> bool;
+    fn canonical_caseless_match<J: Iterator<Item = char>>(self, other: J) -> bool;
+    fn compatibility_caseless_match<J: Iterator<Item = char>>(self, other: J) -> bool;
 }
 
-impl<I: Iterator<Item=char>> Caseless for I {
+impl<I: Iterator<Item = char>> Caseless for I {
     fn default_case_fold(self) -> CaseFold<I> {
         CaseFold {
             chars: self,
@@ -20,12 +23,11 @@ impl<I: Iterator<Item=char>> Caseless for I {
         }
     }
 
-    fn default_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool {
-        iter_eq(self.default_case_fold(),
-                other.default_case_fold())
+    fn default_caseless_match<J: Iterator<Item = char>>(self, other: J) -> bool {
+        iter_eq(self.default_case_fold(), other.default_case_fold())
     }
 
-    fn canonical_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool {
+    fn canonical_caseless_match<J: Iterator<Item = char>>(self, other: J) -> bool {
         // FIXME: Inner NFD can be optimized:
         // "Normalization is not required before case folding,
         //  except for the character U+0345 "combining greek ypogegrammeni"
@@ -35,16 +37,28 @@ impl<I: Iterator<Item=char>> Caseless for I {
         //  can catch these special cases, thereby avoiding an extra normalization
         //  step for each comparison."
         // Unicode Standard, section 3.13 Default Case Algorithms
-        iter_eq(self.nfd().default_case_fold().nfd(),
-                other.nfd().default_case_fold().nfd())
+        iter_eq(
+            self.nfd().default_case_fold().nfd(),
+            other.nfd().default_case_fold().nfd(),
+        )
     }
 
-    fn compatibility_caseless_match<J: Iterator<Item=char>>(self, other: J) -> bool {
+    fn compatibility_caseless_match<J: Iterator<Item = char>>(self, other: J) -> bool {
         // FIXME: Unclear if the inner NFD can be optimized here like in canonical_caseless_match.
-        iter_eq(self.nfd().default_case_fold().nfkd().default_case_fold().nfkd(),
-                other.nfd().default_case_fold().nfkd().default_case_fold().nfkd())
+        iter_eq(
+            self.nfd()
+                .default_case_fold()
+                .nfkd()
+                .default_case_fold()
+                .nfkd(),
+            other
+                .nfd()
+                .default_case_fold()
+                .nfkd()
+                .default_case_fold()
+                .nfkd(),
+        )
     }
-
 }
 
 pub fn default_case_fold_str(s: &str) -> String {
@@ -63,12 +77,19 @@ pub fn compatibility_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().compatibility_caseless_match(b.chars())
 }
 
-fn iter_eq<L: Iterator, R: Iterator>(mut a: L, mut b: R) -> bool where L::Item: PartialEq<R::Item> {
+fn iter_eq<L: Iterator, R: Iterator>(mut a: L, mut b: R) -> bool
+where
+    L::Item: PartialEq<R::Item>,
+{
     loop {
         match (a.next(), b.next()) {
             (None, None) => return true,
             (None, _) | (_, None) => return false,
-            (Some(x), Some(y)) => if !x.eq(&y) { return false },
+            (Some(x), Some(y)) => {
+                if !x.eq(&y) {
+                    return false;
+                }
+            }
         }
     }
 }
@@ -78,7 +99,10 @@ pub struct CaseFold<I> {
     queue: [char; 2],
 }
 
-impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
+impl<I> Iterator for CaseFold<I>
+where
+    I: Iterator<Item = char>,
+{
     type Item = char;
 
     fn next(&mut self) -> Option<char> {
@@ -86,18 +110,18 @@ impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
         if c != '\0' {
             self.queue[0] = self.queue[1];
             self.queue[1] = '\0';
-            return Some(c)
+            return Some(c);
         }
-        self.chars.next().map(|c| {
-            match CASE_FOLDING_TABLE.binary_search_by(|&(x, _)| x.cmp(&c)) {
+        self.chars.next().map(
+            |c| match CASE_FOLDING_TABLE.binary_search_by(|&(x, _)| x.cmp(&c)) {
                 Err(_) => c,
                 Ok(i) => {
                     let folded = CASE_FOLDING_TABLE[i].1;
                     self.queue = [folded[1], folded[2]];
                     folded[0]
                 }
-            }
-        })
+            },
+        )
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -109,8 +133,11 @@ impl<I> Iterator for CaseFold<I> where I: Iterator<Item = char> {
             2
         };
         let (low, high) = self.chars.size_hint();
-        (low.saturating_add(queue_len),
-         high.and_then(|h| h.checked_mul(3)).and_then(|h| h.checked_add(queue_len)))
+        (
+            low.saturating_add(queue_len),
+            high.and_then(|h| h.checked_mul(3))
+                .and_then(|h| h.checked_add(queue_len)),
+        )
     }
 }
 
@@ -126,4 +153,3 @@ mod tests {
         assert_eq!(default_case_fold_str("straße"), "strasse");
     }
 }
-
