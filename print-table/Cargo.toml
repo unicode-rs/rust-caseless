@@ -1,0 +1,10 @@
+[package]
+name = "print-table"
+version = "0.2.1"
+authors = ["Simon Sapin <simon.sapin@exyr.org>"]
+license = "MIT"
+publish = false
+
+[dependencies]
+regex = "1"
+
