@@ -27,5 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Verify CaseFolding.txt
+      run: curl https://www.unicode.org/Public/16.0.0/ucd/CaseFolding.txt -o CaseFolding_online.txt && diff CaseFolding.txt CaseFolding_online.txt
     - name: Verify regenerated files
       run: cargo run --package print-table >case_folding_data.rs && diff case_folding_data.rs src/case_folding_data.rs
