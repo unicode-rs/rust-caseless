@@ -73,6 +73,10 @@ pub fn canonical_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().canonical_caseless_match(b.chars())
 }
 
+pub fn compatibility_case_fold_str(s: &str) -> String {
+    s.nfd().default_case_fold().nfkd().default_case_fold().nfkd().collect()
+}
+
 pub fn compatibility_caseless_match_str(a: &str, b: &str) -> bool {
     a.chars().compatibility_caseless_match(b.chars())
 }
